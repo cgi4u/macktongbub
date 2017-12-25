@@ -1,0 +1,397 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1">
+		
+		<title>맥통법 | 맥주 정보</title>
+	
+		<!--Use JQuery-->
+		<script src="js/jquery-1.11.1.min.js"></script>
+	
+		<!-- Loading select2 -->
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/i18n/ko.js"></script>
+
+		<!-- Loading third party fonts -->
+        <link href="http://fonts.googleapis.com/css?family=Roboto:300,400,700|" rel="stylesheet" type="text/css">
+        <link href="fonts/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+        <!-- Loading main css file -->
+        <link rel="stylesheet" href="style.css">
+
+
+        <!--[if lt IE 9]>
+        <script src="js/ie-support/html5.js"></script>
+        <script src="js/ie-support/respond.js"></script>
+        <![endif]-->
+
+        <script>
+			function convertStyle(styleSymbol){
+				switch (styleSymbol){
+                    case "": return "미지정";
+                    case "ambr": return "앰버/비엔나 라거";
+                    case "pils": return "필스너";
+                    case "pale": return "페일 라거";
+                    case "dunk": return "둔켈";
+                    case "bock": return "복";
+                    case "hell": return "헬레스 라거";
+                    case "ipl": return "IPL";
+                    case "swz": return "슈바르츠비어";
+                    case "ipa": return "IPA";
+                    case "dipa": return "더블/임페리얼 IPA";
+                    case "sipa": return "세션 IPA";
+                    case "apa": return "페일 에일(APA)";
+                    case "tri": return "트라피스트/애비 에일";
+                    case "belg": return "벨지안 스트롱/벨지안 에일";
+                    case "sai": return "세종";
+                    case "stpt": return "스타우트/포터";
+                    case "imps": return "임페리얼 스타우트/포터";
+                    case "bipa": return "블랙 IPA";
+                    case "hefe": return "헤페바이젠";
+                    case "kris": return "크리스탈 바이젠";
+                    case "dkws": return "둔켈 바이젠";
+                    case "wsbk": return "바이젠복";
+                    case "belw": return "위트 에일/벨지안 화이트";
+                    case "gose": return "고제";
+                    case "lmb": return "람빅";
+                    case "slmb": return "가당 람빅";
+                    case "sour": return "사워/와일드 에일";
+                    case "esb": return "비터/ESB";
+                    case "frt": return "과일 맥주";
+                    case "rau": return "라우흐비어/훈연 맥주";
+					case "nac": return "무알콜/저알콜";
+					case "etc": return "기타";
+                    default: return "오류";
+                }
+			}
+			
+			function convertCountry(countrySymbol){
+				switch (countrySymbol){
+					case "": return "미지정";
+					case "DEU": return "독일";
+					case "BEL": return "벨기에";
+					case "CZE": return "체코"; 
+					case "GBR": return "영국";
+					case "IRL": return "아일랜드"; 		
+					case "DNK": return "덴마크";
+					case "FRA": return "프랑스";
+					case "RUS": return "러시아";
+					case "ITA": return "이탈리아";
+					case "USA": return "미국";
+					case "CAN": return "캐나다";
+					case "MEX": return "멕시코";
+					case "SAM": return "남아메리카";
+					case "CHN": return "중국";
+					case "KOR": return "한국";
+					case "JPN": return "일본";
+					case "SEA": return "동남아시아";
+					case "AUS": return "호주";
+					case "NZL": return "뉴질랜드"; 
+					case "ETC": return "기타"; 
+					default: return "오류";ㅣ
+				}
+            }
+
+			function makeBeerView(beer){
+				if (beer['image'] == null){
+					beer['image'] = "not-found.png";
+				}
+
+				var ratingStr;
+				if (beer['grade'] == null){
+					beer['grade'] = 0.0;
+					ratingStr = "아직 평점이 없습니다";
+				}
+				else{
+					ratingStr = "평점 5점 만점에 "+beer['grade']+"점";
+				}
+				ratingStar = parseInt(beer['grade'] / 5.0 * 100.0);
+
+				if (beer['ABV'] == null){
+                    beer['ABV'] = "미지정";
+                }
+				else{
+					 beer['ABV'] = beer['ABV'] + "%";
+				}
+
+				beer['style'] = convertStyle(beer['style']);
+				beer['country'] = convertCountry(beer['country']);
+
+				if (beer['brewery'] === ""){
+					beer['brewery'] = "미지정";
+				}
+
+				var ret = "<div class=\"movie\">\n";
+				ret += "	<figure class=\"movie-poster\"><a href=\"beer-detail.html?beer_id="+beer['beer_id']+"\"><img src=\"images/beers/"+beer['image']+"\" alt=\"Image load failed\"></a></figure>\n";
+				ret += "	<div class=\"movie-title\"><a href=\"beer-detail?beer_id="+beer['beer_id']+"\">"+beer['name']+"</a></div><div style=\"float:right\">ABV " + beer['ABV'] + "</div>";
+				ret += "	<span class=\"star-rating movie-title\" title=\""+ratingStr+"\"><span style=\"width:"+ratingStar+"%\"></span></span>\n";
+				ret += "	<p>" + beer['style'] + " | " + beer['country'] + " | " + beer['brewery'] + "</p>\n";
+				ret += "</div>\n";
+				
+				return ret;
+			}
+
+            $("document").ready(function () {
+                $.get("api/beers", function (data) {
+					//console.log(data);
+					var beers = jQuery.parseJSON(data);
+					//console.log(beers);
+					if (beers != null){
+                    	for (var i = 0; i < beers.length; i++){
+							$(".movie-list").append(makeBeerView(beers[i]));
+						}
+					}
+                });
+
+				$("#style-select").select2({
+					language: "ko",
+					placeholder: "맥주 스타일..."
+				});
+				$("#country-select").select2({
+                    language: "ko",
+                    placeholder: "국가..."
+                });
+
+				var mode = 0;
+				$("#advanced-toggle").click(function(){
+                	$("#advanced").toggle();
+					if ($("#advanced").css("display") !== "none"){
+						mode = 1;
+					}
+					else{
+						mode = 0;
+					}
+            	});
+
+				$("#search-form").submit(function(e){
+					e.preventDefault();
+
+					var query = new Object();
+					if ($(this).find("#name").val() !== ""){
+						query.name = $(this).find("#name").val();
+					}
+					
+					if (mode == 1){
+						if (($(this).find("#style-select").val() !== "") && 
+								($(this).find("#style-select").val() !== "none")){
+                    	    query.style = $(this).find("#style-select").val();
+                    	}
+						if (($(this).find("#country-select").val() !== "") &&
+                    	        ($(this).find("#country-select").val() !== "none")){
+                    	    query.country = $(this).find("#country-select").val();
+                    	}
+						if ($(this).find("#brewery").val() !== ""){
+                            query.brewery = $(this).find("#brewery").val();
+                        }
+						if ($(this).find("#lgrade").val() !== ""){
+                    	    query.lgrade = $(this).find("#lgrade").val();
+                    	}
+						if ($(this).find("#lABV").val() !== ""){
+                    	    query.lABV = $(this).find("#lABV").val();
+                    	}
+						if ($(this).find("#hABV").val() !== ""){
+                    	    query.hABV = $(this).find("#hABV").val();
+						}
+						if ($(this).find("#lIBU").val() !== ""){
+							query.lIBU = $(this).find("#lIBU").val();
+                    	}
+						if ($(this).find("#hIBU").val() !== ""){
+                        	query.hIBU = $(this).find("#hIBU").val();
+						}
+					}
+				
+					console.log(query);	
+					$.get("api/beers", query, function(data){
+						var beers = jQuery.parseJSON(data);
+						$(".movie-list").text("");
+						console.log(beers);
+						if (beers != null){
+							for (var i = 0; i < beers.length; i++){
+                        		$(".movie-list").append(makeBeerView(beers[i]));
+                    		}
+						}	
+					});
+            	});
+			});
+        </script>
+
+	</head>
+
+
+	<body>
+		<div id="site-content">
+			<header class="site-header">
+				<div class="container">
+					<a href="index.html" id="branding">
+						<img src="images/logo.png" alt="" class="logo">
+						<div class="logo-copy">
+							<h1 class="site-title">맥 . 통 . 법</h1>
+							<small class="site-description">맥주와 통하는 법</small>
+						</div>
+					</a> <!-- #branding -->
+
+					<div class="main-navigation">
+						<button type="button" class="menu-toggle"><i class="fa fa-bars"></i></button>
+						<ul class="menu">
+							<li class="menu-item"><a href="index.html">홈</a></li>
+							<li class="menu-item current-menu-item"><a href="beers.html">맥주 정보</a></li>
+							<li class="menu-item"><a href="sellers.html">판매점 정보</a></li>
+						</ul> <!-- .menu -->
+
+						<!--<form action="#" class="search-form">
+							<input type="text" placeholder="Search...">
+							<button><i class="fa fa-search"></i></button>
+						</form>-->
+					</div> <!-- .main-navigation -->
+
+					<div class="mobile-navigation"></div>
+				</div>
+			</header>
+			<main class="main-content">
+				<div class="container">
+					<div class="page">
+						<div class="breadcrumbs">
+							<a href="index.html">홈</a>
+							<span>맥주 정보</span>
+						</div>
+
+						<div class="filters">
+							<form class="search-form" id="search-form">
+								<div>
+									<span class="search-fieldname">제품명</span>
+									<input type="text" id="name" placeholder="맥주 제품명...">
+									<button id="search-submit"><i class="fa fa-search"></i></button>
+								</div>
+								<span id="advanced" style="display:none">
+									<div>
+                                        <span class="search-fieldname">스타일</span>
+                                        <select id="style-select" class="use-select2" style="width: 200px">
+											<option value="" selected></option>
+                                        	<option value="none">미지정</option>
+                                        	<option disabled>-------라거-------</option>
+                                        	<option value="ambr">앰버/비엔나 라거</option>
+                                        	<option value="pils">필스너</option>
+                                        	<option value="pale">페일 라거</option>
+                                        	<option value="dunk">둔켈</option>
+                                        	<option value="bock">복</option>
+                                        	<option value="hell">헬레스 라거</option>
+                                        	<option value="ipl">IPL</option>
+                                        	<option value="swz">슈바르츠비어</option>
+                                        	<option disabled>------페일 에일------</option>
+                                        	<option value="ipa">IPA</option>
+                                        	<option value="dipa">더블/임페리얼 IPA</option>
+                                        	<option value="sipa">세션 IPA</option>
+                                        	<option value="apa">페일 에일(APA)</option>
+                                        	<option disabled>-------벨지안-------</option>
+                                        	<option value="tri">트라피스트/애비 에일</option>
+                                        	<option value="belg">벨지안 스트롱/벨지안 에일</option>
+                                        	<option value="sai">세종</option>
+                                        	<option disabled>----스타우트/포터----</option>
+                                        	<option value="stpt">스타우트/포터</option>
+                                        	<option value="imps">임페리얼 스타우트/포터</option>
+                                        	<option value="bipa">블랙 IPA</option>
+                                        	<option disabled>------밀맥주------</option>
+                                        	<option value="hefe">헤페바이젠</option>
+                                        	<option value="kris">크리스탈 바이젠</option>
+                                        	<option value="dkws">둔켈 바이젠</option>
+                                        	<option value="wsbk">바이젠복</option>
+                                        	<option value="belw">위트 에일/벨지안 화이트</option>
+                                        	<option value="gose">고제</option>
+                                        	<option disabled>------사워------</option>
+                                        	<option value="lmb">람빅</option>
+                                        	<option value="slmb">가당 람빅</option>
+                                        	<option value="sour">사워/와일드 에일</option>
+                                        	<option disabled>------기타------</option>
+                                        	<option value="esb">비터/ESB</option>
+                                        	<option value="frt">과일 맥주</option>
+                                        	<option value="rau">라우흐비어/훈연 맥주</option>
+											<option value="nac">무알콜/저알콜</option>
+											<option value="etc">기타</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <span class="search-fieldname">국가</span>
+                                        <select id="country-select" class="use-select2" style="width: 200px">
+                                        	<option value="" selected></option>
+                                        	<option value="none">미지정</option>
+                                        	<option disabled>-------유럽-------</option>
+                                        	<option value="DEU">독일</option>
+                                        	<option value="BEL">벨기에</option>
+                                        	<option value="CZE">체코</option>
+                                        	<option value="GBR">영국</option>
+                                        	<option value="IRL">아일랜드</option>
+                                        	<option value="DNK">덴마크</option>
+                                        	<option value="FRA">프랑스</option>
+                                        	<option value="RUS">러시아</option>
+                                        	<option value="ITA">이탈리아</option>
+                                        	<option disabled>------아메리카------</option>
+                                        	<option value="USA">미국</option>
+                                        	<option value="CAN">캐나다</option>
+                                        	<option value="MEX">멕시코</option>
+                                        	<option value="SAM">남아메리카</option>
+                                        	<option disabled>------아시아------</option>
+                                        	<option value="KOR">한국</option>
+                                        	<option value="CHN">중국</option>
+                                        	<option value="JPN">일본</option>
+                                        	<option value="SEA">동남아시아</option>
+                                        	<option disabled>------오세아니아------</option>
+                                        	<option value="AUS">호주</option>
+                                        	<option value="NZL">뉴질랜드</option>
+                                        	<option disabled>-------기타-------</option>
+                                        	<option value="ETC">기타</option>
+										</select>
+                                    </div>
+									<div>
+										<span class="search-fieldname">브루어리명</span>
+                                    	<input type="text" id="brewery" placeholder="Search...">
+									</div>
+									<div>
+                                        <span class="search-fieldname">평점</span>
+                                        <input type="number" id="lgrade" step="0.1" placeholder="최소 점수.." style="width: 100px">
+                                    </div>
+									<div>
+										<span class="search-fieldname">도수(ABV)</span>
+										<input type="number" id="lABV" step="0.01" placeholder="최저 도수.." style="width: 100px">
+										<input type="number" id="hABV" step="0.01" placeholder="최고 도수.." style="width: 100px">
+									</div>
+									<div>
+										<span class="search-fieldname">IBU     <i class="fa fa-question" title="맥주의 쓴맛을 나타내는 척도입니다. 일반적으로 높을수록 쓴맛이 강합니다."></i></span>
+										<input type="number" id="lIBU" placeholder="최소 IBU.." style="width: 100px">
+										<input type="number" id="hIBU" placeholder="최대 IBU.." style="width: 100px">
+									</div>
+								</span>
+							</form>
+                            <button id="advanced-toggle" class="button">상세 검색</button>
+							<a href="beer-add.html" class = "button">맥주 추가하기</a>
+                        </div>
+
+                        <div class="movie-list"></div>
+
+					    
+					</div>
+				</div> <!-- .container -->
+			</main>
+			<footer class="site-footer">
+				<div class="container">
+					<div class="row">
+						
+					</div> <!-- .row -->
+
+					<div class="colophon">Copyright 2014 Company name, Designed by Themezy. All rights reserved</div>
+				</div> <!-- .container -->
+
+			</footer>
+		</div>
+		<!-- Default snippet for navigation -->
+		
+
+
+		<script src="js/plugins.js"></script>
+		<script src="js/app.js"></script>
+		
+	</body>
+
+</html>

@@ -1,0 +1,403 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1">
+		
+		<title>맥통법 | 판매점 정보 추가하기</title>
+	
+		<!--Use JQuery-->
+		<script src="js/jquery-1.11.1.min.js"></script>
+	
+		<!-- Loading select2 -->
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/i18n/ko.js"></script>
+
+		<!-- Loading third party fonts -->
+        <link href="http://fonts.googleapis.com/css?family=Roboto:300,400,700|" rel="stylesheet" type="text/css">
+        <link href="fonts/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+        <!-- Loading main css file -->
+        <link rel="stylesheet" href="style.css">
+
+
+        <!--[if lt IE 9]>
+        <script src="js/ie-support/html5.js"></script>
+        <script src="js/ie-support/respond.js"></script>
+        <![endif]-->
+		
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ9m9KF2rsYkkTqdnuSbWT9ctqDG3ghjU&libraries=places&callback=initMap" async defer></script>
+        <script>
+			var map;
+			var geocoder;
+			var markers = [];
+
+			var lastLatLng = [];
+			var lastPlaceObj;
+			var selectedLatLng = [];
+			var selectedPlaceObj;
+
+			function initMap() {
+				map = new google.maps.Map(document.getElementById('map'), {
+					center: {lat: 37.566535, lng: 126.977969},
+					zoom: 12
+				});
+				geocoder = new google.maps.Geocoder();
+
+				var input_auto = document.getElementById('map_auto');
+				var options = {
+					componentRestrictions: { country: 'KR'}
+				};
+				var autoComplete = new google.maps.places.Autocomplete(input_auto, options);
+		
+				google.maps.event.addListener(autoComplete, 'place_changed', function() {
+					var place = autoComplete.getPlace();
+
+					if (!place) {
+    					return;
+  					}			
+
+  					// Clear out the old markers.
+  					markers.forEach(function(marker) {
+    					marker.setMap(null);
+  					});
+  					markers = [];
+
+					var bounds = new google.maps.LatLngBounds();
+					if (!place.geometry) {
+      					console.log("Returned place contains no geometry");
+      					return;
+   					}
+					
+					lastPlaceObj = place;
+					lastLatLng[0] = place.geometry.location.lat();
+                    lastLatLng[1] = place.geometry.location.lng();
+					console.log(lastLatLng);
+   					// Create a marker for each place.
+    				markers.push(new google.maps.Marker({
+      					map: map,
+      					title: place.name,
+      					position: place.geometry.location
+    				}));
+
+    				if (place.geometry.viewport) {
+      					// Only geocodes have viewport.
+      					bounds.union(place.geometry.viewport);
+    				} else {
+      					bounds.extend(place.geometry.location);
+    				}
+  					map.fitBounds(bounds);
+				});
+			}
+
+			function codeAddress() {
+				if (document.getElementById('geocode').value === "") return;
+
+				var address = document.getElementById('geocode').value;
+				geocoder.geocode( { 
+					'address': address,
+					'componentRestrictions': { 'country': 'KR' }
+				}
+				, function(results, status) {
+					if (status == 'OK') {
+						map.setCenter(results[0].geometry.location);
+
+						// Clear out the old markers.
+  						markers.forEach(function(marker) {
+    						marker.setMap(null);
+  						});
+ 						markers = [];
+
+						lastPlaceObj = results[0];
+						lastLatLng[0] = results[0].geometry.location.lat();
+						lastLatLng[1] = results[0].geometry.location.lng();
+						console.log(lastLatLng);
+						markers.push(new google.maps.Marker({
+							map: map,
+							title: results[0].formatted_address,
+							position: results[0].geometry.location
+						}));
+					} else {
+						 alert('Geocode was not successful for the following reason: ' + status);
+					}
+				 });
+			}
+
+			function saveLatLng(){
+				if (!lastLatLng.length){
+					alert("먼저 지정할 위치를 검색하세요");
+					return;
+				}
+
+				selectedLatLng = lastLatLng;
+				selectedPlaceObj = lastPlaceObj;
+				if (selectedPlaceObj.name){
+					alert(selectedPlaceObj.name + "을(를) 위치로 지정 완료했습니다.");
+					$("#cur_location").text("현재 위치: " + selectedPlaceObj.name);
+					$("#name").val(selectedPlaceObj.name);
+				}
+				else{
+					alert(selectedPlaceObj.formatted_address + "을(를) 위치로 지정 완료했습니다.");
+					$("#cur_location").text("현재 위치: " + selectedPlaceObj.formatted_address);
+				}
+				$("#address").val(selectedPlaceObj.formatted_address);
+			}
+
+			function cancelSelected(){
+				if (!selectedPlaceObj){
+                    alert("위치가 지정되지 않았습니다");
+                    return;
+                }
+				
+				selectedLatLng = [];
+				selectedPlaceObj = null;
+				$("#cur_location").text("현재 위치: 미지정");
+				alert("위치 지정 해제가 완료되었습니다.");
+			}
+
+            $("document").ready(function () {
+				$("#type").select2({
+					language: "ko",
+					placeholder: "업소 종류..."
+				});
+				$("#short-addr").select2({
+                    language: "ko",
+					placeholder: "지역..."
+                });
+
+				$("form#search-form").submit(function(e){
+					e.preventDefault();
+					if ($(this).find("#name").val() === ""){
+						alert("이름은 반드시 입력해야 합니다!");
+						return;
+					}
+
+					var regExp = /^\d{2,3}-\d{3,4}-\d{4}$/;
+					if ( ($("#phone").val() !== "") && (!regExp.test($("#phone").val())) ) {
+						alert("잘못된 휴대폰 번호입니다. 숫자, - 를 포함한 숫자만 입력하세요.");
+						return;
+					}
+
+					var newSeller = new Object();
+					newSeller.name = $(this).find("#name").val();
+					newSeller.type = $(this).find("#type").val();
+					newSeller.short_addr = $(this).find("#short-addr").val();
+					newSeller.address = $(this).find("#address").val();
+					newSeller.phone = $(this).find("#phone").val();
+					newSeller.description = $(this).find("#description").val();
+					if (selectedLatLng.length){
+						newSeller.lat = selectedLatLng[0];
+						newSeller.lng = selectedLatLng[1];
+					}
+
+					if (newSeller.type === "") newSeller.type = 0;
+					if (newSeller.short_addr === "") newSeller.short_addr = 0;
+					
+					if ($(this).find("#image").val() !== ""){
+						var getExtension = ($("#image")[0].files[0]['name']).split(".");		
+		
+						var date = new Date();
+						var components = [
+    						date.getYear(),
+    						date.getMonth(),
+    						date.getDate(),
+    						date.getHours(),
+    						date.getMinutes(),
+    						date.getSeconds(),
+    						date.getMilliseconds()
+						];
+						newSeller.image = components.join("") + "." + getExtension[getExtension.length - 1];
+					}
+
+					console.log(newSeller);
+				
+					
+					$.post("api/sellers", newSeller, function(data){
+						if ($("#image").val() !== ""){
+							var formData = new FormData();
+							formData.append("image_file", $("#image")[0].files[0]);
+            				formData.append("name", newSeller.image);
+							$.ajax({
+            					url: "api/sellers/images",
+            					contentType: 'multipart/form-data',
+            					type: 'POST',
+            					data: formData,  
+            					mimeType: 'multipart/form-data',
+            					success: function () {              
+                 					alert( "정보 저장에 성공했습니다." );               
+            					},
+            					error : function (jqXHR, textStatus, errorThrown) {
+                					alert('이미지 저장에 실패했습니다. Error: ' + textStatus);
+            					},
+            					cache: false,
+            					contentType: false,
+            					processData: false
+        					}); 
+						}
+						else{
+							alert( "정보 저장에 성공했습니다." );
+						}
+						
+						$("form#search-form")[0].reset();
+						selectedLatLng = [];
+                		selectedPlaceObj = null;
+                		$("#cur_location").text("현재 위치: 미지정");
+						$("#map_auto").val("");
+						$("geocode").val("");
+   					});
+            	});
+
+				$('#description').on('keyup', function() {
+					if($(this).val().length > 200) {
+						$(this).val($(this).val().substring(0, 200));
+					}
+				});
+			});
+        </script>
+
+	</head>
+
+
+	<body>
+		<div id="site-content">
+			<header class="site-header">
+				<div class="container">
+					<a href="index.html" id="branding">
+						<img src="images/logo.png" alt="" class="logo">
+						<div class="logo-copy">
+							<h1 class="site-title">맥 . 통 . 법</h1>
+							<small class="site-description">맥주와 통하는 법</small>
+						</div>
+					</a> <!-- #branding -->
+
+					<div class="main-navigation">
+						<button type="button" class="menu-toggle"><i class="fa fa-bars"></i></button>
+						<ul class="menu">
+							<li class="menu-item"><a href="index.html">홈</a></li>
+							<li class="menu-item"><a href="beers.html">맥주 정보</a></li>
+							<li class="menu-item"><a href="sellers.html">판매점 정보</a></li>
+						</ul> <!-- .menu -->
+
+						<!--<form action="#" class="search-form">
+							<input type="text" placeholder="Search...">
+							<button><i class="fa fa-search"></i></button>
+						</form>-->
+					</div> <!-- .main-navigation -->
+
+					<div class="mobile-navigation"></div>
+				</div>
+			</header>
+			<main class="main-content">
+				<div class="container">
+					<div class="page">
+						<div class="breadcrumbs">
+							<a href="index.html">홈</a>
+							<a href="sellers.html">판매점 정보</a>
+							<span>판매점 정보 추가하기</span>
+						</div>
+						<div id="map" style="width:100%; height:330px; margin-bottom:30px;"></div>
+						<div style="margin-bottom:30px">
+							<div id="cur_location">현재 위치: 미지정</div>
+							<div>	
+								<span>이름으로 찾기</span>
+								<input id="map_auto" type="text">
+							</div>
+							<div>
+								<span>주소로 찾기</span>
+								<input id="geocode" class="input" type="text">  
+								<button id="geocode-submit" onClick="codeAddress()">주소찾기</button>	
+							</div>
+							<div>
+								<button id="geocode-submit" onClick="saveLatLng()">현재 위치로 지정하기</button>
+								<button id="geocode-submit" onClick="cancelSelected()">위치 지정 취소</button>
+							</div>
+						</div>
+						<div class="filters">
+							<form class="search-form" id="search-form">
+								<div>
+									<span class="search-fieldname">업소명(필수)</span>
+									<input type="text" id="name" placeholder="업소명...">
+								</div>
+								<div>
+									<span class="search-fieldname">이미지</span>
+									<input id="image" type="file" accept="image/*">
+								</div>
+								<div>
+                                	<span class="search-fieldname">종류</span>
+                                    <select id="type" class="use-select2" style="width: 220px">
+                                    	<option value="" selected></option>
+                                       	<option value=0>미지정</option>
+										<option value=1>펍/바</option>
+										<option value=2>바틀샵</option>
+										<option value=3>마트</option>
+										<option value=4>기타</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <span class="search-fieldname">지역</span>
+                                    <select id="short-addr" class="use-select2" style="width: 220px">
+                                    	<option value="" selected></option>
+										<option value=0>미지정</option>
+										<option value=1>서울 강북</option>
+										<option value=2>서울 강남</option>
+										<option value=3>부산</option>
+										<option value=4>대구</option>
+										<option value=5>인천</option>
+										<option value=6>광주</option>
+										<option value=7>대전</option>
+										<option value=8>울산</option>
+										<option value=9>세종</option>
+										<option value=10>경기 북부</option>
+										<option value=11>경기 남부</option>
+										<option value=12>강원</option>
+										<option value=13>충북</option>
+										<option value=14>충남</option>
+										<option value=15>전북</option>
+										<option value=16>전남</option>
+										<option value=17>경북</option>
+										<option value=18>경남</option>
+										<option value=19>제주</option>
+                                    </select>
+                                </div>
+								<div>
+									<span class="search-fieldname">주소</span>
+									<input type="text" id="address" style="width:90%" placeholder="주소..">
+								</div>
+								<div>
+									<span class="search-fieldname">전화번호</span>
+									<input type="text" id="phone" placeholder="전화번호..">
+								</div>
+								<div>
+									<span class="search-fieldname">설명</span>
+									<textarea style="width:90%" rows=4 id="description"></textarea>
+								</div>
+								<button id="search-submit">추가하기</button>
+							</form>
+                        </div>
+					    
+					</div>
+				</div> <!-- .container -->
+			</main>
+			<footer class="site-footer">
+				<div class="container">
+					<div class="row">
+						
+					</div> <!-- .row -->
+
+					<div class="colophon">Copyright 2014 Company name, Designed by Themezy. All rights reserved</div>
+				</div> <!-- .container -->
+
+			</footer>
+		</div>
+		<!-- Default snippet for navigation -->
+		
+
+
+		<script src="js/plugins.js"></script>
+		<script src="js/app.js"></script>
+		
+	</body>
+
+</html>

@@ -211,8 +211,7 @@ table {
  * Global Styles
  */
 body {
-  background-color: #131a20;
-  background-image: url(dummy/background.jpg);
+  background-color: #E58500;
   background-position: top center;
   background-repeat: no-repeat;
   color: #84878d;
@@ -1594,6 +1593,7 @@ ul.arrow {
     background-repeat: no-repeat;
     background-position: 100% center; }
   .filters div { margin-bottom: 10px; }
+  .filters .search-fieldname { display: inline-block; width: 90px;}
 
 .movie-list {
   margin: 0 -15px; }
@@ -1620,12 +1620,14 @@ ul.arrow {
       border-radius: 5px;
       overflow: hidden;
       margin-bottom: 20px;
+	  height: 250px;
       border: 1px solid transparent; }
       .movie-list .movie .movie-poster img {
+		width: 100%;
+      	max-width: 100%;
+		height: 100%;
+		object-fit: contain;
         display: block;
-        width: 100%;
-        max-width: 100%;
-        height: auto;
         -webkit-transition: .3s ease;
                 transition: .3s ease; }
     .movie-list .movie:hover img {

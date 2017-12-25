@@ -2,14 +2,42 @@
 <head>
 <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
 <script>
-$("document").ready(function(){
-	//$.get("api/index.php", function(data, status){
-		$("#response").text("Heeeee");
-	//});
-});
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '584652145232049',
+      xfbml      : true,
+      version    : 'v2.11'
+    });
+    FB.AppEvents.logPageView();
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "https://connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+
+	FB.getLoginStatus(function(response) {
+    	statusChangeCallback(response);
+	});
+
+	function checkLoginState() {
+  		FB.getLoginStatus(function(response) {
+    		statusChangeCallback(response);
+ 		});
+	}
 </script>
 </head>
 <body>
+ <div
+    class="fb-login-button"
+    data-max-rows="1"
+    data-size="<medium, large>"
+    data-button-type="continue_with"
+    data-width="<100% or px>"
+    data-scope="<comma separated list of permissions, e.g. public_profile, email>"></div>
 <div id = 'response'></div>
 </body>
 </html>

@@ -1,0 +1,385 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1">
+		
+		<title>맥통법 | 판매점 정보</title>
+	
+		<!--Use JQuery-->
+		<script src="js/jquery-1.11.1.min.js"></script>
+	
+		<!-- Loading select2 -->
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/i18n/ko.js"></script>
+
+		<!-- Loading third party fonts -->
+        <link href="http://fonts.googleapis.com/css?family=Roboto:300,400,700|" rel="stylesheet" type="text/css">
+        <link href="fonts/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+        <!-- Loading main css file -->
+        <link rel="stylesheet" href="style.css">
+
+
+        <!--[if lt IE 9]>
+        <script src="js/ie-support/html5.js"></script>
+        <script src="js/ie-support/respond.js"></script>
+        <![endif]-->
+		
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ9m9KF2rsYkkTqdnuSbWT9ctqDG3ghjU&libraries=places" async defer></script>
+
+        <script>
+			var map
+			function initMap() {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: {lat: 37.566535, lng: 126.977969},
+                    zoom: 12
+                });
+			}
+
+			function convertType(typeSymbol){
+				switch (typeSymbol){
+                    case "0": return "미지정";
+                    case "1": return "펍/바";
+                    case "2": return "바틀샵";
+                    case "3": return "마트";
+                    case "4": return "기타";
+                    default: return "오류";
+                }
+			}
+			
+			function convertSaddr(saddrSymbol){
+				switch (saddrSymbol){
+					case "0": return "미지정";
+					case "1": return "서울 강북";
+					case "2": return "서울 강남";
+					case "3": return "부산"; 
+					case "4": return "대구";
+					case "5": return "인천"; 		
+					case "6": return "광주";
+					case "7": return "대전";
+					case "8": return "울산";
+					case "9": return "세종";
+					case "10": return "경기 북부";
+					case "11": return "경기 남부";
+					case "12": return "강원";
+					case "13": return "충북";
+					case "14": return "충남";
+					case "15": return "전북";
+					case "16": return "전남";
+					case "17": return "경북";
+					case "18": return "경남";
+					case "19": return "제주";  
+					default: return "오류";
+				}
+            }
+
+			function makeSellerView(seller){
+				if (seller['image'] == null){
+					seller['image'] = "not-found.png";
+				}
+
+				var ratingStr;
+				if (seller['grade'] == null){
+					seller['grade'] = 0.0;
+					ratingStr = "아직 평점이 없습니다";
+				}
+				else{
+					ratingStr = "평점 5점 만점에 "+seller['grade']+"점";
+				}
+				ratingStar = parseInt(seller['grade'] / 5.0 * 100.0);
+
+				seller['type'] = convertType(seller['type']);
+				seller['short_addr'] = convertSaddr(seller['short_addr']);
+
+				var ret = "<div class=\"movie\">\n";
+				ret += "	<figure class=\"movie-poster\"><a href=\"seller-detail.html?seller_id="+seller['seller_id']+"\"><img src=\"images/sellers/"+seller['image']+"\" alt=\"Image load failed\"></a></figure>\n";
+				ret += "	<div class=\"movie-title\"><a href=\"seller-detail?seller_id="+seller['seller_id']+"\">"+seller['name']+"</a></div>";
+				ret += "	<span class=\"star-rating movie-title\" title=\""+ratingStr+"\"><span style=\"width:"+ratingStar+"%\"></span></span>\n";
+				ret += "	<p>" + seller['type'] + " | " + seller['short_addr'] + "</p>\n";
+				ret += "</div>\n";
+				
+				return ret;
+			}
+
+            $("document").ready(function () {
+                $.get("api/sellers", function (data) {
+					console.log(data);
+					var sellers = jQuery.parseJSON(data);
+					console.log(sellers);
+					if (sellers != null){
+                    	for (var i = 0; i < sellers.length; i++){
+							$(".movie-list").append(makeSellerView(sellers[i]));
+						}
+					}
+                });
+
+				$("#type").select2({
+					language: "ko",
+					placeholder: "업소 종류..."
+				});
+				$("#short_addr").select2({
+                    language: "ko",
+                    placeholder: "지역..."
+                });
+
+				var mode = 0;
+				$("#advanced-toggle").click(function(){
+                	$("#advanced").toggle();
+					if ($("#advanced").css("display") !== "none"){
+						mode = 1;
+					}
+					else{
+						mode = 0;
+					}
+            	});
+			
+				var map_mode = false;
+				var query;
+				var markers = [];
+				$("#map-view").click(function(){
+					$("#map").toggle();
+					markers.forEach(function(marker) {
+    					marker.setMap(null);
+  					});
+  					markers = [];
+
+					if (!map_mode){
+						map_mode = true;
+						$("#map-view").text("목록으로 보기");
+		
+						initMap();
+						$.get("api/sellers", query, function(data){
+                        	var sellers = jQuery.parseJSON(data);
+                        	$(".movie-list").text("");
+                        	if (sellers != null){
+                            	for (var i = 0; i < sellers.length; i++){
+									if (sellers[i].lat){
+    									// Create a marker for each place.
+    									var marker = new google.maps.Marker({
+      										map: map,
+      										title: sellers[i].name,
+      										position: new google.maps.LatLng(sellers[i].lat, sellers[i].lng),
+											id: sellers[i].seller_id
+    									});
+
+										google.maps.event.addListener(marker, "click", function(){
+											window.location = "/seller-detail.html?seller_id="+this.id;
+										});			
+										markers.push(marker);
+									}
+								}
+							}
+						});
+					}
+					else{
+						map_mode = false;
+						$("#map-view").text("지도에서 보기");
+	
+						$.get("api/sellers", query, function(data){
+                            var sellers = jQuery.parseJSON(data);
+                            $(".movie-list").text("");
+                            if (sellers != null){
+                                for (var i = 0; i < sellers.length; i++){
+                                	$(".movie-list").append(makeSellerView(sellers[i]));
+								}
+                            }
+                        });
+					}
+				});
+
+				$("#search-form").submit(function(e){
+					e.preventDefault();
+
+					query = new Object();
+					if ($(this).find("#name").val() !== ""){
+						query.name = $(this).find("#name").val();
+					}
+					
+					if (mode == 1){
+						if (($(this).find("#type").val() !== "") && 
+								($(this).find("#type").val() !== 0)){
+                    	    query.style = $(this).find("#type").val();
+                    	}
+						if (($(this).find("#short_addr").val() !== "") &&
+                    	        ($(this).find("#short_addr").val() !== "none")){
+                    	    query.country = $(this).find("#short_addr").val();
+                    	}
+						if ($(this).find("#address").val() !== ""){
+                            query.address = $(this).find("#address").val();
+                        }
+						if ($(this).find("#lgrade").val() !== ""){
+                    	    query.lgrade = $(this).find("#lgrade").val();
+                    	}
+					}
+				
+					console.log(query);	
+					if (!map_mode){
+						$.get("api/sellers", query, function(data){
+							var sellers = jQuery.parseJSON(data);
+							$(".movie-list").text("");
+							console.log(sellers);
+							if (sellers != null){
+								for (var i = 0; i < sellers.length; i++){
+                        			$(".movie-list").append(makeSellerView(sellers[i]));
+                    			}
+							}
+						
+						});
+					}
+					else{
+						markers.forEach(function(marker) {
+                        	marker.setMap(null);
+                    	});
+                    	markers = [];
+					
+						 $.get("api/sellers", query, function(data){
+                            var sellers = jQuery.parseJSON(data);
+                            $(".movie-list").text("");
+                            if (sellers != null){
+                                for (var i = 0; i < sellers.length; i++){
+                                    if (sellers[i].lat){
+                                        // Create a marker for each place.
+                                        markers.push(new google.maps.Marker({
+                                            map: map,
+                                            title: sellers[i].name,
+                                            position: new google.maps.LatLng(sellers[i].lat, sellers[i].lng)
+                                        }));
+                                    }
+                                }
+                            }
+                        });
+					}
+            	});
+			});
+        </script>
+
+	</head>
+
+
+	<body>
+		<div id="site-content">
+			<header class="site-header">
+				<div class="container">
+					<a href="index.html" id="branding">
+						<img src="images/logo.png" alt="" class="logo">
+						<div class="logo-copy">
+							<h1 class="site-title">맥 . 통 . 법</h1>
+							<small class="site-description">맥주와 통하는 법</small>
+						</div>
+					</a> <!-- #branding -->
+
+					<div class="main-navigation">
+						<button type="button" class="menu-toggle"><i class="fa fa-bars"></i></button>
+						<ul class="menu">
+							<li class="menu-item"><a href="index.html">홈</a></li>
+							<li class="menu-item"><a href="beers.html">맥주 정보</a></li>
+							<li class="menu-item current-menu-item"><a href="sellers.html">판매점 정보</a></li>
+						</ul> <!-- .menu -->
+
+						<!--<form action="#" class="search-form">
+							<input type="text" placeholder="Search...">
+							<button><i class="fa fa-search"></i></button>
+						</form>-->
+					</div> <!-- .main-navigation -->
+
+					<div class="mobile-navigation"></div>
+				</div>
+			</header>
+			<main class="main-content">
+				<div class="container">
+					<div class="page">
+						<div class="breadcrumbs">
+							<a href="index.html">홈</a>
+							<span>판매점 정보</span>
+						</div>
+
+						<div class="filters">
+							<form class="search-form" id="search-form">
+								<div>
+									<span class="search-fieldname">업소명</span>
+									<input type="text" id="name" placeholder="업소명...">
+									<button id="search-submit"><i class="fa fa-search"></i></button>
+								</div>
+								<span id="advanced" style="display:none">
+									<div>
+                                        <span class="search-fieldname">종류</span>
+                                        <select id="type" class="use-select2" style="width: 200px">
+											<option value="" selected></option>
+											<option value=0>미지정</option>
+											<option value=1>펍/바</option>
+											<option value=2>바틀샵</option>
+											<option value=3>마트</option>
+											<option value=4>기타</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <span class="search-fieldname">지역</span>
+                                        <select id="short_addr" class="use-select2" style="width: 200px">
+                                        	<option value="" selected></option>
+											<option value=0>미지정</option>
+											<option value=1>서울 강북</option>
+											<option value=2>서울 강남</option>
+											<option value=3>부산</option>
+											<option value=4>대구</option>
+											<option value=5>인천</option>
+											<option value=6>광주</option>
+											<option value=7>대전</option>
+											<option value=8>울산</option>
+											<option value=9>세종</option>
+											<option value=10>경기 북부</option
+											<option value=11>경기 남부</option>
+											<option value=12>강원</option>
+											<option value=13>충북</option>
+											<option value=14>충남</option>
+											<option value=15>전북</option>
+											<option value=16>전남</option>
+											<option value=17>경북</option>
+											<option value=18>경남</option>
+											<option value=19>제주</option>
+										</select>
+                                    </div>
+									<div>
+										<span class="search-fieldname">주소</span>
+                                    	<input type="text" id="address" style="width:90%" placeholder="주소..">
+									</div>
+									<div>
+                                        <span class="search-fieldname">평점</span>
+                                        <input type="number" id="lgrade" step="0.1" placeholder="최소 점수.." style="width: 100px">
+                                    </div>
+								</span>
+							</form>
+                            <button id="advanced-toggle" class="button">상세 검색</button>
+							<button id="map-view" class="button">지도에서 보기</button>
+							<a href="seller-add.html" class = "button">판매점 추가하기</a>
+                        </div>
+						<div id="map" style = "width:100%; height:330px; display:none"></div>
+                        <div class="movie-list"></div>
+
+					    
+					</div>
+				</div> <!-- .container -->
+			</main>
+			<footer class="site-footer">
+				<div class="container">
+					<div class="row">
+						
+					</div> <!-- .row -->
+
+					<div class="colophon">Copyright 2014 Company name, Designed by Themezy. All rights reserved</div>
+				</div> <!-- .container -->
+
+			</footer>
+		</div>
+		<!-- Default snippet for navigation -->
+		
+
+
+		<script src="js/plugins.js"></script>
+		<script src="js/app.js"></script>
+		
+	</body>
+
+</html>

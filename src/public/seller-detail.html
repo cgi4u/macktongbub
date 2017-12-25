@@ -1,0 +1,312 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1">
+		
+		<title>맥통법 | </title>
+
+		<!-- Loading third party fonts -->
+		<link href="http://fonts.googleapis.com/css?family=Roboto:300,400,700|" rel="stylesheet" type="text/css">
+		<link href="fonts/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+		<!-- Loading main css file -->
+		<link rel="stylesheet" href="style.css">
+		
+		<!--[if lt IE 9]>
+		<script src="js/ie-support/html5.js"></script>
+		<script src="js/ie-support/respond.js"></script>
+		<![endif]-->
+
+        <script src="js/jquery-1.11.1.min.js"></script>
+
+        <script>
+			function convertType(typeSymbol){
+				switch (typeSymbol){
+                    case "0": return "미지정";
+                    case "1": return "펍/바";
+                    case "2": return "바틀샵";
+                    case "3": return "마트";
+                    case "4": return "기타";
+                    default: return "오류";
+                }
+			}
+			
+			function convertSaddr(saddrSymbol){
+				switch (saddrSymbol){
+					case "0": return "미지정";
+					case "1": return "서울 강북";
+					case "2": return "서울 강남";
+					case "3": return "부산"; 
+					case "4": return "대구";
+					case "5": return "인천"; 		
+					case "6": return "광주";
+					case "7": return "대전";
+					case "8": return "울산";
+					case "9": return "세종";
+					case "10": return "경기 북부";
+					case "11": return "경기 남부";
+					case "12": return "강원";
+					case "13": return "충북";
+					case "14": return "충남";
+					case "15": return "전북";
+					case "16": return "전남";
+					case "17": return "경북";
+					case "18": return "경남";
+					case "19": return "제주";  
+					default: return "오류";
+				}
+            }
+
+			$.urlParam = function(name){
+                var results = new RegExp('[\?&amp;]' + name + '=([^&amp;#]*)').exec(window.location.href);
+				if (results == null) return null;
+            	else return results[1] || 0;
+            }
+
+			function makeCommentBlock(grade, comment, id){
+    			ret = "<tr style=\"border-bottom:1px solid\">";
+    			ret +=  "<td style=\"width:25%\"><div class=\"star-rating\" id=\"seller_rating\"><span id=\"seller_rating_star\" style=\"width:"+grade+"%\"></span></div></td>";
+    			ret +=    "<td style=\"text-align:left; word-wrap:break-word;\">";
+    			ret +=    comment;
+    			ret +=    "</td>";
+    			ret +=    "<td style=\"width:20%\"><button class=\"button delete-button\" value="+id+" style=\"float:right\"><i class=\"fa fa-trash-o\"></i></button></td></tr>"
+
+    			return ret;
+			}
+		
+			function loadComments(seller_id){
+				$("#comments").text("");
+				$.get("api/sellers/comments/"+seller_id, function(data){
+					console.log(data);
+                    comments = JSON.parse(data);
+                    for (var i = 0; i < comments.length; i++){
+						var gradeStar = parseInt(comments[i]['grade'] / 5.0 * 100.0);
+                        $("#comments").append(makeCommentBlock(gradeStar, comments[i]['comment'], comments[i]['id']));
+                    }
+				
+					$(".delete-button").click(function(e){
+						var inputPass = prompt("작성시 지정한 패스워드를 입력하세요.");
+						
+						var deleteData = new Object();
+						deleteData.seller_id = seller_id;
+						deleteData.id = $(this).val();
+						deleteData.password = inputPass;
+						
+						$.ajax({
+							url: "api/sellers/comments/"+seller_id,
+							type: 'DELETE',
+							success: 	function(data){
+											console.log(data);
+											window.location.reload(true); 
+										},
+							data: deleteData
+						});
+                	});
+                });
+			}
+
+			function makeBeerBlock(beer_id, name){
+				ret = "<li><a href=\"beer-detail.html?beer_id=" + beer_id +"\">" + name + "</a></li>"
+				return ret
+			}
+
+			$("document").ready(function () {
+            	var id = $.urlParam('seller_id');
+				if (id == null){
+					alert("잘못된 접근입니다!");
+					return;
+				}
+
+				loadComments(id);
+
+            	$.get("api/sellers", {"seller_id":id}, function(data){
+					seller = JSON.parse(data)[0];
+
+					if (seller['image'] == null){
+                    	seller['image'] = "not-found.png";
+                	}
+
+                	var ratingStr;
+                	if (seller['grade'] == null){
+                    	seller['grade'] = 0.0;
+                    	ratingStr = "아직 평점이 없습니다";
+                	}
+                	else{
+                    	ratingStr = "평점 5점 만점에 "+seller['grade']+"점";
+                	}
+                	ratingStar = parseInt(seller['grade'] / 5.0 * 100.0);
+
+                	seller['type'] = convertType(seller['type']);
+                	seller['short_addr'] = convertSaddr(seller['short_addr']);
+                	if (seller['address'] === ""){
+                    	seller['address'] = "미지정";
+                	}
+
+					$(".seller_name").text(seller['name']);
+					$("title").text($("title").text() + seller['name']);
+					$("#seller_type").text(seller['type']);
+					$("#seller_short_addr").text(seller['short_addr']);
+					$("#seller_address").text(seller['address']);
+					$("#seller_description").text(seller['description']);
+					$("#seller_phone").text(seller['phone']);
+					$("#seller_image").attr({ src: "images/sellers/" + seller['image'] });
+
+					$("#seller_rating").attr({title:ratingStr});
+					$("#seller_rating_star").attr({style:"width:"+ratingStar+"%"});
+				});
+
+				$('#comment').on('keyup', function() {
+                    if($(this).val().length > 200) {
+                        $(this).val($(this).val().substring(0, 200));
+                    }
+                });
+
+				$.get("api/beers/seller/" + id, function(data){
+					console.log(data);
+                    beers = JSON.parse(data);
+					if (beers){
+                    	for (var i = 0; i < beers.length; i++){
+                        	$("#beer_list").append(makeBeerBlock(beers[i]['beer_id'], beers[i]['name']));
+                    	}	
+					}
+				})
+
+				$("form#rating-form").submit(function(e){
+					e.preventDefault();
+					if ($("#grade").val() === ""){
+						alert("평점은 반드시 입력해야 합니다!");
+						return;
+					}
+					if ($("#password").val().length !== 4){
+						alert("비밀번호를 4자리로 입력해 주세요.");
+                        return;
+					}
+					
+					var newComment = new Object();
+					newComment.grade = $("#grade").val();
+					newComment.comment = $("#comment").val();
+					newComment.password = $("#password").val();
+
+					$.post("api/sellers/comments/"+id, newComment, function(data){
+						window.location.reload(true);
+					});
+				});
+
+				$("#modify").click(function(){
+					window.location = "/seller-modify.html?seller_id=" + id;
+				});
+			});
+        </script>
+	</head>
+
+
+	<body>
+		
+
+		<div id="site-content">
+			<header class="site-header">
+				<div class="container">
+					<a href="index.html" id="branding">
+						<img src="images/logo.png" alt="" class="logo">
+						<div class="logo-copy">
+							<h1 class="site-title">맥 . 통 . 법</h1>
+							<small class="site-description">맥주와 통하는 법</small>
+						</div>
+					</a> <!-- #branding -->
+
+					<div class="main-navigation">
+						<button type="button" class="menu-toggle"><i class="fa fa-bars"></i></button>
+						<ul class="menu">
+							<li class="menu-item"><a href="index.html">홈</a></li>
+							<li class="menu-item"><a href="beers.html">맥주 정보</a></li>
+							<li class="menu-item current-menu-item"><a href="sellers.html">판매점 정보</a></li>
+						</ul> <!-- .menu -->
+                        <!--
+						<form action="#" class="search-form">
+							<input type="text" placeholder="Search...">
+							<button><i class="fa fa-search"></i></button>
+						</form>
+                        -->
+					</div> <!-- .main-navigation -->
+
+					<div class="mobile-navigation"></div>
+				</div>
+			</header>
+			<main class="main-content">
+				<div class="container">
+					<div class="page">
+						<div class="breadcrumbs">
+							<a href="index.html">홈</a>
+							<a href="sellers.html">판매점 정보</a>
+							<span class="seller_name"></span>
+						</div>
+
+						<div class="content">
+							<div class="row">
+								<div class="col-md-6">
+									<figure class="movie-poster"><img src="" id="seller_image" alt="#"></figure>
+								</div>
+								<div class="col-md-6">
+									<h2 class="movie-title seller_name">맥주 이름</h2>
+									<ul class="movie-meta">
+										<li><strong>평점:</strong> 
+											<div class="star-rating" id="seller_rating" title="Rated 3.00 out of 5"><span id="seller_rating_star" style="width:65%"></span></div>
+										</li>
+										<li><strong>종류:</strong> <span id="seller_type">임의</span></li>
+										<li><strong>지역:</strong> <span id="seller_short_addr">임의</span></li>
+										<li><strong>주소:</strong> <span id="seller_address">임의</span></li>
+										<li><strong>전화번호:</strong> <span id="seller_phone">임의</span></li>
+									</ul>
+									<ul class="movie-meta" id="beer_list">
+										 <li><strong>판매 제품 리스트:</strong></li>
+									</ul>
+								</div>
+							</div> <!-- .row -->
+							<div class="entry-content" id="seller_description">
+							</div>
+							<div style="margin-top:30px">
+								<button id="modify" class = button>정보 수정</button>
+							</div>
+							<div class="filters" style="margin-top:50px">
+								<form id="rating-form" class="search-form">
+									<div>
+										<span>평점</span> 
+										<input id="grade" type="number" min=0 max=5 style="margin-right:10px">
+										<span>비밀번호</span>
+										<input id="password" type="password" maxlength="4" style="width:20%">
+										<button id="rating-submit" style="float:right">등록</button>
+									</div>
+									<div>
+										<span class="search-fieldname">의견</span> 				
+										<textarea id="comment" style="width:70%"></textarea>
+									</div>
+								</form>
+								<div>
+									<hr>
+									<table width="100%" style="table-layout:fixed;" id="comments">
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div> <!-- .container -->
+			</main>
+			<footer class="site-footer">
+				<div class="container">
+					<div class="colophon">Copyright 2014 Company name, Designed by Themezy. All rights reserved</div>
+				</div> <!-- .container -->
+
+			</footer>
+		</div>
+		<!-- Default snippet for navigation -->
+		
+
+
+		<script src="js/plugins.js"></script>
+		<script src="js/app.js"></script>
+		
+	</body>
+
+</html>
