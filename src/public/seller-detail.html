@@ -193,6 +193,30 @@
 						window.location.reload(true);
 					});
 				});
+				
+				function makeResultBlock(beer_id, name){
+                	ret = "<li><a class=\"add_beer\" value="+beer_id+">" + name + "</a></li>"
+                	return ret
+            	}
+
+				$("#beer_search_submit").click(function(){
+					$("#search_result").text("");
+					if ( $("#beer_search").val() === "") return;
+					$.get("api/beers", { name:$("#beer_search").val() }, function(data){
+						beers = JSON.parse(data);
+						if (beers){
+							for (var i = 0; i < beers.length; i++){
+					 			$("#search_result").append(makeResultBlock(beers[i]['beer_id'], beers[i]['name']));	
+							}
+							$(".add_beer").click(function(){
+								$.post("api/sfb", {"seller_id":id, "beer_id":$(this).attr("value")}, function(data){
+                        			console.log(data);
+                        			window.location.reload(true);
+                    			});
+							});
+						}
+					}); 
+				})
 
 				$("#modify").click(function(){
 					window.location = "/seller-modify.html?seller_id=" + id;
@@ -260,7 +284,11 @@
 										<li><strong>전화번호:</strong> <span id="seller_phone">임의</span></li>
 									</ul>
 									<ul class="movie-meta" id="beer_list">
-										 <li><strong>판매 제품 리스트:</strong></li>
+										<li><strong>판매 제품 리스트:</strong></li>
+									</ul>
+									<input type="text" id="beer_search">
+                                    <button class="button" id="beer_search_submit">판매제품 추가 검색</button>
+									<ul style="margin-bottom:30px" id="search_result">
 									</ul>
 								</div>
 							</div> <!-- .row -->

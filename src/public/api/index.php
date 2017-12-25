@@ -26,8 +26,16 @@ $container['db'] = function ($c) {
 $container['upload_directory'] = __DIR__ ."/../images/";
 
 //API Routing
-$app->get('/', function (Request $request, Response $response) {
- 	return $response->withRedirect('http://ec2-13-125-96-30.ap-northeast-2.compute.amazonaws.com', 301);
+$app->post('/sfb', function (Request $request, Response $response) {
+ 	$id_pair = $request->getParsedBody();
+	#echo json_encode($id_pair);
+	#return;
+
+	$sfb_mapper = new SellerForBeerMapper($this->db);
+    $result = $sfb_mapper->save($id_pair['seller_id'], $id_pair['beer_id']);
+    $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));
+
+    return $response;
 });
 
 $app->get('/beers', function (Request $request, Response $response) {

@@ -165,7 +165,7 @@
 											id: sellers[i].seller_id
     									});
 
-										google.maps.event.addListener(marker, "click", function(){
+										google.maps.event.addListener(marker, "mousedown", function(){
 											window.location = "/seller-detail.html?seller_id="+this.id;
 										});			
 										markers.push(marker);
